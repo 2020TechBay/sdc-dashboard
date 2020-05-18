@@ -1,25 +1,49 @@
 import React from 'react';
-import logo from './logo.svg';
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import './App.css';
+import Sidebar from './components/Sidebar';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Switch>
+        <Route path='/login'>
+          <Login />;
+        </Route>
+        <Route path='/' exact>
+          <Dashboard />
+        </Route>
+        <Route path='/'>
+          <Redirect to='/login' />
+        </Route>
+      </Switch>
+    </Router>
+  );
+  return (
+    <Router>
+      <div className="App">
+        <Sidebar
+          selectedTab={window.location.pathname}
+          tabs={[
+            { caption: "Home", icon: "home_icon.png", target: "/" },
+            { caption: "Customers", icon: "people_icon.png", target: "/customers" },
+            { caption: "Reports", icon: "graph_icon.png", target: "/reports" },
+          ]} />
+        <Switch>
+          <Route path="/reports">
+            <div className="App-header">Reports</div>
+          </Route>
+          <Route path="/customers">
+            <div className="App-header">Customers</div>
+          </Route>
+          <Route path="/">
+            <div className="App-header">Home</div>
+          </Route>
+        </Switch>
+      </div>
+    </Router>
   );
 }
 
