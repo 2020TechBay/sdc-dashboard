@@ -31,6 +31,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function Login() {
+    document.title = "SDC Dashboard - Login";
     const classes = useStyles();
     const [state, _setState] = React.useState({
         email: "",
