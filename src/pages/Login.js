@@ -58,9 +58,7 @@ export default function Login() {
             if (form.reportValidity()) {
                 setState({ awaitingResponse: true });
                 let result = await login(state.email, state.password);
-                console.log(result);
-                if (!result.error) {
-                    sessionStorage.setItem('access_token', result.token);
+                if (result.success) {
                     window.location = '/';
                     return;
                 }
