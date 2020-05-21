@@ -1,11 +1,12 @@
 import React from 'react';
 import clsx from 'clsx';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
 import Box from '@material-ui/core/Box';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
+import Bounce from 'react-activity/lib/Bounce';
 import List from '@material-ui/core/List';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
@@ -24,11 +25,18 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import { Link as RouterLink, Switch, Route } from 'react-router-dom';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
 import Title from '../../components/Title';
 import Chart from '../../components/Chart';
 import Customers from './Customers';
 import Requests from './Requests';
 import Reports from './Reports';
+import { getRequests } from '../../api';
+import moment from 'moment';
 
 const drawerWidth = 240;
 const roleMap = {
@@ -120,6 +128,13 @@ const useStyles = makeStyles((theme) => ({
         },
     },
     appBarSpacer: theme.mixins.toolbar,
+    loadingContainer: {
+        display: 'flex',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%'
+    },
     content: {
         flexGrow: 1,
         height: '100vh',
@@ -176,6 +191,7 @@ function SidebarItem({ caption, icon, target }) {
 export default function Dashboard() {
     const classes = useStyles();
     const user = JSON.parse(localStorage.getItem('user_info'));
+    const [showLogoutDialog, setLogoutDialogVisible] = React.useState(false);
     return (
         <div className={classes.root}>
             <CssBaseline />
@@ -213,10 +229,7 @@ export default function Dashboard() {
                     <span className={classes.email}>{user.email}</span>
                     <span className={classes.role}>{roleMap[user.role]}</span>
                     <Button mt={4} variant="contained" color="primary" disableElevation
-                        onClick={() => {
-                            localStorage.clear();
-                            window.location = '/login';
-                        }}>
+                        onClick={() => setLogoutDialogVisible(true)}>
                         Logout
                     </Button>
                 </div>
@@ -257,7 +270,30 @@ export default function Dashboard() {
                     </Switch>
                 </Container>
             </main>
-        </div>
+            <Dialog
+                open={showLogoutDialog}
+                onClose={() => setLogoutDialogVisible(false)}
+            >
+                <DialogTitle id="alert-dialog-title">Confirmation</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        Are you sure you want to log out?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button color="primary" onClick={() => { setLogoutDialogVisible(false) }} >
+                        No
+                     </Button>
+                    <Button variant="contained" color="primary" autoFocus disableElevation
+                        onClick={() => {
+                            localStorage.clear();
+                            window.location = '/login';
+                        }}>
+                        Yes
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </div >
     );
 }
 
@@ -276,84 +312,92 @@ const chart_data = [
     { month: "Dec", request_count: null },
 ];
 
-// Generate Order Data
-function createData(id, date, customer, product, response) {
-    return { id, date, customer, product, response };
-}
-
-const rows = [
-    createData(0, '16 Mar, 2019', 'Elvis Presley', 'HP Laptop', 'N/A'),
-    createData(1, '16 Mar, 2019', 'Paul McCartney', 'Xbox One Console', 'ACCEPTED'),
-    createData(2, '16 Mar, 2019', 'Tom Scholz', 'Samsung TV', 'REJECTED'),
-    createData(3, '16 Mar, 2019', 'Michael Jackson', 'iPhone', 'REJECTED'),
-    createData(4, '15 Mar, 2019', 'Bruce Springsteen', 'BMW M3', 'ACCEPTED'),
-];
-
+let requests;
 function DashboardPage() {
     const classes = useStyles();
     const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
+    const [isLoading, setLoading] = React.useState(requests === undefined);
+    const theme = useTheme();
+
+    React.useEffect(() => {
+        getRequests(false)
+            .then(results => {
+                requests = results.slice(0, 5);
+                setLoading(false);
+            })
+            .catch(() => alert("Something went wrong. Please check your internet connection and refresh the page."));
+    }, []);
+
     return (
-        <Grid container spacing={3}>
-            {/* Chart */}
-            <Grid item xs={12} md={8} lg={9}>
-                <Paper className={fixedHeightPaper}>
-                    <Chart
-                        data={chart_data}
-                        title={"Total number of requests per month for " + new Date().getFullYear()}
-                        x_axis={{ key: 'month' }}
-                        y_axis={{ key: 'request_count', label: 'Requests' }}
-                    />
-                </Paper>
-            </Grid>
-            {/* Recent Deposits */}
-            <Grid item xs={12} md={4} lg={3}>
-                <Paper className={fixedHeightPaper}>
-                    <React.Fragment>
-                        <Title>Peak</Title>
-                        <Box display='flex' flex={1} flexDirection='column' alignItems='center' justifyContent='center' pb={3}>
-                            <Typography component="p" variant="h4">
-                                10
+        <React.Fragment>
+            {isLoading ?
+                <Box className={classes.loadingContainer}>
+                    <Bounce color={theme.palette.primary.main} />
+                </Box>
+                :
+                <Grid container spacing={3}>
+                    {/* Chart */}
+                    <Grid item xs={12} md={8} lg={9}>
+                        <Paper className={fixedHeightPaper}>
+                            <Chart
+                                data={chart_data}
+                                title={"Total number of requests per month for " + new Date().getFullYear()}
+                                x_axis={{ key: 'month' }}
+                                y_axis={{ key: 'request_count', label: 'Requests' }}
+                            />
+                        </Paper>
+                    </Grid>
+                    {/* Peak Request Count */}
+                    <Grid item xs={12} md={4} lg={3}>
+                        <Paper className={fixedHeightPaper}>
+                            <React.Fragment>
+                                <Title>Peak</Title>
+                                <Box display='flex' flex={1} flexDirection='column' alignItems='center' justifyContent='center' pb={3}>
+                                    <Typography component="p" variant="h4">
+                                        10
                             </Typography>
-                            <Typography color="textSecondary">
-                                requests on May 2020
-                        </Typography>
-                        </Box>
-                    </React.Fragment>
-                </Paper>
-            </Grid>
-            {/* Recent Requests */}
-            <Grid item xs={12}>
-                <Paper className={classes.paper}>
-                    <React.Fragment>
-                        <Title>Recent Requests</Title>
-                        <Table  >
-                            <TableHead >
-                                <TableRow>
-                                    <TableCell>Date</TableCell>
-                                    <TableCell>Product</TableCell>
-                                    <TableCell>Customer</TableCell>
-                                    <TableCell align="right">Response</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {rows.map((row) => (
-                                    <TableRow key={row.id}>
-                                        <TableCell>{row.date}</TableCell>
-                                        <TableCell>{row.product}</TableCell>
-                                        <TableCell>{row.customer}</TableCell>
-                                        <TableCell align="right">{row.response}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                        <Box align="right" mt={3}>
-                            <Link color="primary" href="/requests" >
-                                View all
-                            </Link>
-                        </Box>
-                    </React.Fragment>
-                </Paper>
-            </Grid>
-        </Grid>
+                                    <Typography color="textSecondary">
+                                        requests on May 2020
+                            </Typography>
+                                </Box>
+                            </React.Fragment>
+                        </Paper>
+                    </Grid>
+                    {/* Recent Requests */}
+                    <Grid item xs={12}>
+                        <Paper className={classes.paper}>
+                            <React.Fragment>
+                                <Title>Recent Requests</Title>
+                                <Table  >
+                                    <TableHead >
+                                        <TableRow>
+                                            <TableCell>Date</TableCell>
+                                            <TableCell>Product</TableCell>
+                                            <TableCell>Customer</TableCell>
+                                            <TableCell align="right">Response</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {requests.map(r => (
+                                            <TableRow key={r.id}>
+                                                <TableCell>{moment(r.date).format("D MMM YYYY [at] h:mm a")}</TableCell>
+                                                <TableCell>{r.product.name}</TableCell>
+                                                <TableCell>{r.customer.name}</TableCell>
+                                                <TableCell align="right">{r.response}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                <Box align="right" mt={3}>
+                                    <RouterLink to='/requests'>
+                                        View all
+                                    </RouterLink>
+                                </Box>
+                            </React.Fragment>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            }
+        </React.Fragment>
     );
 }

@@ -1,12 +1,21 @@
 import React from 'react';
 import Paper from '@material-ui/core/Paper';
 import Button from '@material-ui/core/Button';
+import Box from '@material-ui/core/Box';
+import Bounce from 'react-activity/lib/Bounce';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import { makeStyles } from '@material-ui/core/styles';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
+import moment from 'moment';
+import { getRequests, sendResponse } from '../../api';
 
 const useStyles = makeStyles((theme) => ({
     paper: {
@@ -14,58 +23,126 @@ const useStyles = makeStyles((theme) => ({
         display: 'flex',
         overflow: 'auto',
         flexDirection: 'column',
+    },
+    loadingContainer: {
+        display: 'flex',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center'
     }
 }));
 
-// Generate Order Data
-function createData(id, date, customer, product, response) {
-    return { id, date, customer, product, response };
-}
-
-const rows = [
-    createData(0, '16 Mar, 2019', 'Elvis Presley', 'HP Laptop', 'N/A'),
-    createData(1, '16 Mar, 2019', 'Paul McCartney', 'Xbox One Console', 'ACCEPTED'),
-    createData(2, '16 Mar, 2019', 'Tom Scholz', 'Samsung TV', 'REJECTED'),
-    createData(3, '16 Mar, 2019', 'Michael Jackson', 'iPhone', 'REJECTED'),
-    createData(4, '15 Mar, 2019', 'Bruce Springsteen', 'BMW M3', 'ACCEPTED'),
-];
-
+let requests = 0;
 export default function Requests() {
+    const [isLoading, setLoading] = React.useState(requests === 0);
+    const [showModal, setModalVisible] = React.useState(false);
+    const [selectedRequest, setSelectedRequest] = React.useState();
+    const [isSendingResponse, setIsSendingResponse] = React.useState(false);
+    const theme = useTheme();
     const classes = useStyles();
+
+    React.useEffect(() => {
+        if (isLoading) {
+            getRequests(requests !== 0)
+                .then(results => {
+                    requests = results;
+                    setLoading(false);
+                })
+                .catch(() => alert("Something went wrong. Please check your internet connection and refresh the page."));
+        }
+    }, [isLoading]);
+
+    const handleResponseClicked = (response) => {
+        setIsSendingResponse(true);
+        sendResponse(selectedRequest.id, response)
+            .catch(() => alert("Something went wrong. Please check your internet connection and refresh the page."))
+            .then(() => {
+                setIsSendingResponse(false);
+                setModalVisible(false);
+                setLoading(true);
+            });
+    };
+
     return (
         <Paper className={classes.paper}>
-            <React.Fragment>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Product</TableCell>
-                            <TableCell>Customer</TableCell>
-                            <TableCell>Response</TableCell>
-                            <TableCell></TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows.map((row) => (
-                            <TableRow key={row.id}>
-                                <TableCell>{row.date}</TableCell>
-                                <TableCell>{row.product}</TableCell>
-                                <TableCell>{row.customer}</TableCell>
-                                <TableCell>{row.response}</TableCell>
-                                <TableCell align="right">
-                                    {row.response === 'N/A' ?
-                                        <Button variant="contained" color="primary" disableElevation>
-                                            Respond
-                                        </Button>
-                                        :
-                                        null
-                                    }
-                                </TableCell>
+            {isLoading ?
+                <Box className={classes.loadingContainer}>
+                    <Bounce color={theme.palette.primary.main} />
+                </Box>
+                :
+                <React.Fragment>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Date</TableCell>
+                                <TableCell>Customer</TableCell>
+                                <TableCell>Product Name</TableCell>
+                                <TableCell>Product Description</TableCell>
+                                <TableCell>Response</TableCell>
+                                <TableCell></TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </React.Fragment>
+                        </TableHead>
+                        <TableBody>
+                            {(requests || []).map(r => (
+                                <TableRow key={r.id}>
+                                    <TableCell>{moment(r.date).format("D MMM YYYY [at] h:mm a")}</TableCell>
+                                    <TableCell>{r.customer.name}</TableCell>
+                                    <TableCell>{r.product.name}</TableCell>
+                                    <TableCell>{r.product.description}</TableCell>
+                                    <TableCell>{r.response}</TableCell>
+                                    <TableCell align="right">
+                                        {r.response === 'N/A' ?
+                                            <Button variant="contained" color="primary" disableElevation
+                                                onClick={() => {
+                                                    setSelectedRequest(r);
+                                                    setModalVisible(true);
+                                                }}>
+                                                Respond
+                                        </Button>
+                                            :
+                                            null
+                                        }
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    <Box mt={2} align="center">
+                        <Button variant="contained" color="primary" onClick={() => setLoading(true)}>
+                            Refresh
+                        </Button>
+                    </Box>
+                </React.Fragment>
+            }
+            <Dialog
+                fullWidth
+                disableBackdropClick
+                disableEscapeKeyDown
+                open={showModal}
+                onClose={() => setModalVisible(false)}
+            >
+                <DialogTitle id="alert-dialog-title">Respond to Request</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <b>Customer: </b>{selectedRequest?.customer.name}<br />
+                        <b>Product: </b>{selectedRequest?.product.name}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button color="primary" disabled={isSendingResponse}
+                        onClick={() => setModalVisible(false)} >
+                        Cancel
+                     </Button>
+                    <Button color="primary" disabled={isSendingResponse}
+                        onClick={() => handleResponseClicked("REJECTED")} >
+                        Reject
+                     </Button>
+                    <Button variant="contained" color="primary" autoFocus disableElevation disabled={isSendingResponse}
+                        onClick={() => handleResponseClicked("ACCEPTED")} >
+                        Accept
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Paper>
     );
 }

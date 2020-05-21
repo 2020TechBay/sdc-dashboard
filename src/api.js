@@ -12,7 +12,6 @@ export async function login(email, password) {
             return { success: false, error };
 
         let userInfo = await fetch(SERVER_URL + '/officer', {
-            method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
         }).then(response => response.json());
 
@@ -23,4 +22,34 @@ export async function login(email, password) {
     catch (error) {
         return { success: false, error };
     }
+}
+
+export function getCustomers() {
+    return fetch(SERVER_URL + '/officer/customers', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+    }).then(response => response.json());
+}
+
+let requests;
+export async function getRequests(refresh = true) {
+    if (!requests || refresh) {
+        requests = await fetch(SERVER_URL + '/officer/requests', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+        })
+            .then(response => response.json())
+            .then(results => results.reverse());
+    }
+
+    return requests;
+}
+
+export function sendResponse(productRequestID, response) {
+    return fetch(SERVER_URL + '/officer/respond', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productRequestID, response })
+    })
 }

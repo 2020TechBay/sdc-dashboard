@@ -1,11 +1,15 @@
 import React from 'react';
 import Paper from '@material-ui/core/Paper';
+import Box from '@material-ui/core/Box';
+import Button from '@material-ui/core/Button';
+import Bounce from 'react-activity/lib/Bounce';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { getCustomers } from '../../api';
 
 const useStyles = makeStyles((theme) => ({
     paper: {
@@ -13,47 +17,65 @@ const useStyles = makeStyles((theme) => ({
         display: 'flex',
         overflow: 'auto',
         flexDirection: 'column',
+    },
+    loadingContainer: {
+        display: 'flex',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center'
     }
 }));
 
-// Generate Order Data
-function createData(id, name, email, phoneNumber) {
-    return { id, name, email, phoneNumber };
-}
-
-const rows = [
-    createData(0, 'Joseph Edusei', 'jedusei99@gmail.com', '020654898'),
-    createData(1, 'John Doe', 'johndoe@microsoft.com', '0305658521'),
-    createData(2, 'Beatrice Simpson', 'bsimpson@hotmail.com', '028225823'),
-    createData(3, 'Karen Whittaker', 'karenwhite@gmail.com', '0246852281'),
-    createData(4, 'Denzel Washington', 'denzel@gmail.com', '054853212'),
-];
-
-
+let customers;
 export default function Customers() {
+    const [isLoading, setLoading] = React.useState(customers === undefined);
+    const theme = useTheme();
     const classes = useStyles();
+
+    React.useEffect(() => {
+        if (isLoading) {
+            getCustomers()
+                .then(results => {
+                    customers = results;
+                    setLoading(false);
+                })
+                .catch(() => alert("Something went wrong. Please check your internet connection and refresh the page."));
+        }
+    }, [isLoading]);
+
     return (
         <Paper className={classes.paper}>
-            <React.Fragment>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Phone Number</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows.map((row) => (
-                            <TableRow key={row.id}>
-                                <TableCell>{row.name}</TableCell>
-                                <TableCell>{row.email}</TableCell>
-                                <TableCell>{row.phoneNumber}</TableCell>
+            {isLoading ?
+                <Box className={classes.loadingContainer}>
+                    <Bounce color={theme.palette.primary.main} />
+                </Box>
+                :
+                <React.Fragment>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Name</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Phone Number</TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </React.Fragment>
+                        </TableHead>
+                        <TableBody>
+                            {(customers || []).map(c => (
+                                <TableRow key={c.email}>
+                                    <TableCell>{c.name}</TableCell>
+                                    <TableCell>{c.email}</TableCell>
+                                    <TableCell>{c.phoneNumber}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    <Box mt={2} align="right">
+                        <Button variant="contained" color="primary" onClick={() => setLoading(true)}>
+                            Refresh
+                        </Button>
+                    </Box>
+                </React.Fragment>
+            }
         </Paper>
     );
 }
