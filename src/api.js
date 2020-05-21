@@ -16,8 +16,8 @@ export async function login(email, password) {
             headers: { 'Authorization': `Bearer ${token}` },
         }).then(response => response.json());
 
-        sessionStorage.setItem('access_token', token);
-        sessionStorage.setItem('user_info', JSON.stringify(userInfo));
+        localStorage.setItem('access_token', token);
+        localStorage.setItem('user_info', JSON.stringify(userInfo));
         return { success: true };
     }
     catch (error) {
