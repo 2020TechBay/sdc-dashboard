@@ -17,19 +17,19 @@ const theme = createMuiTheme({
 });
 
 function App() {
-  const isLoggedIn = (sessionStorage.getItem('access_token') != null);
+  const isLoggedIn = (localStorage.getItem('access_token') != null);
   return (
     <ThemeProvider theme={theme}>
       <Router>
         <Switch>
           <Route path='/login'>
             {isLoggedIn ?
-              <Redirect to='/' />
+              <Redirect to='/dashboard' />
               :
               <Login />
             }
           </Route>
-          <Route path='/' exact>
+          <Route path={['/', '/customers', '/requests', '/reports']} exact>
             {isLoggedIn ?
               <Dashboard />
               :
@@ -37,7 +37,7 @@ function App() {
             }
           </Route>
           <Route path='/'>
-            <Redirect to={isLoggedIn ? '/' : '/login'} />
+            <Redirect to={isLoggedIn ? '/dashboard' : '/login'} />
           </Route>
         </Switch>
       </Router>
