@@ -74,11 +74,11 @@ export default function Requests() {
                     <Table size="small">
                         <TableHead>
                             <TableRow>
-                                <TableCell>Date</TableCell>
-                                <TableCell>Customer</TableCell>
-                                <TableCell>Product Name</TableCell>
-                                <TableCell>Product Description</TableCell>
-                                <TableCell>Response</TableCell>
+                                <TableCell><b>Date</b></TableCell>
+                                <TableCell><b>Customer</b></TableCell>
+                                <TableCell><b>Product Name</b></TableCell>
+                                <TableCell><b>Product Description</b></TableCell>
+                                <TableCell><b>Response</b></TableCell>
                                 <TableCell></TableCell>
                             </TableRow>
                         </TableHead>
@@ -124,8 +124,16 @@ export default function Requests() {
                 <DialogTitle id="alert-dialog-title">Respond to Request</DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
-                        <b>Customer: </b>{selectedRequest?.customer.name}<br />
-                        <b>Product: </b>{selectedRequest?.product.name}
+                        <b>Product: </b>{selectedRequest?.product.name}<br />
+                        <b>Customer Info:</b>
+                        <div style={{ marginLeft: 10 }}>
+                            <b>Name: </b>{selectedRequest?.customer.name}<br />
+                            <b>Age: </b>{selectedRequest?.customer.age} years<br />
+                            <b>Email: </b>{selectedRequest?.customer.email}<br />
+                            <b>Phone Number: </b>{selectedRequest?.customer.phoneNumber}<br />
+                            <b>Nationality: </b>{selectedRequest?.customer.nationality}<br />
+                            <b>National ID Number: </b>{selectedRequest?.customer.nationalID}<br />
+                        </div>
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
