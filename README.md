@@ -1,3 +1,7 @@
+##Duely Note: 
+The Mobile Application version of the entire SDC Showroom app is provided as an apk in the Google drive located below. 
+
+
 ## SDC Dashboard
 This is the web dashboard used to view and respond to product requests made through the SDC Showroom application.
 You can download the APK here: https://drive.google.com/file/d/1YdMdKMqmavlAkYHRS2jfInIRl0wwY7WL/view?usp=sharing
