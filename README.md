@@ -1,4 +1,4 @@
-##Duely Note: 
+## Duely Note
 The Mobile Application version of the entire SDC Showroom app is provided as an apk in the Google drive located below. 
 
 
